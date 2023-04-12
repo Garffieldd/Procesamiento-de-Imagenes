@@ -3,20 +3,24 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import nibabel as nib
 import numpy as np
-import threading
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+canvas = None
 
 def open_image_umbralization():
+    global canvas
+    if isinstance(canvas, FigureCanvasTkAgg):
+        canvas.get_tk_widget().destroy()
     route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
     image_nibabel = nib.load(route)
     image_data = image_nibabel.get_fdata()
-    axial_slice = image_data[:, :, 20]
     tol=100
     tau=150
     while True:
-        segmentation = axial_slice >= tau
-        mBG = axial_slice[ segmentation == 0].mean()
-        mFG = axial_slice[ segmentation == 1].mean()
+        segmentation = image_data >= tau
+        mBG = image_data[ segmentation == 0].mean()
+        mFG = image_data[ segmentation == 1].mean()
 
         tau_post= 0.5 * (mBG + mFG)
 
@@ -26,47 +30,53 @@ def open_image_umbralization():
             tau = tau_post  
     
      
-    segmentation_type = (segmentation * 255).astype(np.uint8) 
-    image = Image.fromarray(segmentation_type)
-    image_tk = ImageTk.PhotoImage(image)
-    image_label.config(image=image_tk)
-    image_label.image = image_tk
-    global image_route
-    image_route = route
+    fig = plt.figure(figsize=(6, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    
+    ax.imshow(segmentation[:,:,20])
+    ax.axis('off')
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().pack()
+    canvas.draw()
 
 #Por ahora solo lo hace en 3 separaciones, toca hacerlo dinamico
 def open_image_Kmeans():
+    global canvas
+    if isinstance(canvas, FigureCanvasTkAgg):
+        canvas.get_tk_widget().destroy()
     route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
     image_nibabel = nib.load(route)
     image_data = image_nibabel.get_fdata()
-    axial_slice = image_data[:, :, 20]
-    k1 = np.amin(axial_slice)
-    k2 = np.mean(axial_slice)
-    k3 = np.amax(axial_slice)
+    #axial_slice = image_data[:, :, 20]
+    k1 = np.amin(image_data)
+    k2 = np.mean(image_data)
+    k3 = np.amax(image_data)
 
     for i in range(0,3):
-        d1 = np.abs(k1 - axial_slice)  #diferencia entre la axial_slicen y el valor de referencia de cada cluster
-        d2 = np.abs(k2 - axial_slice)
-        d3 = np.abs(k3 - axial_slice)
+        d1 = np.abs(k1 - image_data)  #diferencia entre la image_datan y el valor de referencia de cada cluster
+        d2 = np.abs(k2 - image_data)
+        d3 = np.abs(k3 - image_data)
 
-        segmentation = np.zeros_like(axial_slice)
+        segmentation = np.zeros_like(image_data)
         segmentation[np.multiply(d1 < d2, d1 < d3)] = 0
         segmentation[np.multiply(d2 < d1, d2 < d3)] = 1
         segmentation[np.multiply(d3 < d1, d3 < d2)] = 2
 
-        k1 = axial_slice[ segmentation == 0].mean()
-        k2 = axial_slice[ segmentation == 1].mean()
-        k3 = axial_slice[ segmentation == 2].mean() 
-    
-    
-    segmentation_type = (segmentation * 255).astype(np.uint8) 
-    image = Image.fromarray(segmentation_type)
-    image_tk = ImageTk.PhotoImage(image)
-    image_label.config(image=image_tk)
-    image_label.image = image_tk
+        k1 = image_data[ segmentation == 0].mean()
+        k2 = image_data[ segmentation == 1].mean()
+        k3 = image_data[ segmentation == 2].mean() 
+        
+    fig = plt.figure(figsize=(6, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    ax.imshow(segmentation[:,:,20])
+    ax.axis('off')
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().pack()
+    canvas.draw()
     global image_route
     image_route = route
 
+#El codigo de regio Growing se demora mucho, toca mejorarlo
 def open_image_regionGrowing():
     route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
     image_nibabel = nib.load(route)
@@ -102,12 +112,13 @@ def open_image_regionGrowing():
                     cluster_voxels = image_data[segmentation == 1]
                     valor_medio_cluster = cluster_voxels.mean()
 
-        axial_slice = segmentation[:,:,20]
-        segmentation_type = (axial_slice * 255).astype(np.uint8) 
-        image = Image.fromarray(segmentation_type)
-        image_tk = ImageTk.PhotoImage(image)
-        image_label.config(image=image_tk)
-        image_label.image = image_tk
+        fig = plt.figure(figsize=(6, 6), dpi=100)
+        ax = fig.add_subplot(111)
+        
+        ax.imshow(segmentation[:,:,20])
+        ax.axis('off')
+        canvas = FigureCanvasTkAgg(fig, master=root)
+        canvas.get_tk_widget().pack()
         global image_route
         image_route = route   
 
@@ -117,13 +128,7 @@ def open_image_regionGrowing():
 root=Tk()
 root.title("Cargar Imagen")
 root.config(bg="black")
-
-"""
-segmentationFrame = Frame()
-segmentationFrame.pack()
-segmentationFrame.config(bg="blue")
-segmentationFrame.config(width="650", height="350")
-"""
+root.geometry("650x350")
 
 buttonUmbra = Button(root, text="Select an image (umbralization)",command=open_image_umbralization)
 buttonUmbra.pack()
@@ -131,11 +136,8 @@ buttonUmbra.pack()
 buttonKmeans = Button(root, text="Select an image (K-means)",command=open_image_Kmeans)
 buttonKmeans.pack()
 
-#buttonRegioGrowing = Button(root, text="Select an image (regionGrowing)",command=open_image_regionGrowing)
-#buttonRegioGrowing.pack()
-
-image_label = Label(root)
-image_label.pack()
+#buttonRegionGrowing = Button(root, text="Select an image (regionGrowing)",command=open_image_regionGrowing)
+#buttonRegionGrowing.pack()
 
 image_route = None
 
