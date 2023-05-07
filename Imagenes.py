@@ -1,144 +1,171 @@
 from tkinter import *
 from tkinter import filedialog
+from tkinter import ttk
 from PIL import Image, ImageTk
 import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import sys
+sys.path.append('./Segmentation Algorithms')
+from umbralization import umbralization_segmentation
+from kmeans import kmeans_segmentation
+from region_growing import regios_growing_segmentation
 
 canvas = None
+image_nibabel = None
+canvaPre = None
+scale_num = 0
+selected_value = None
+preview = None
 
-def open_image_umbralization():
-    global canvas
+def recover_image():
+    global image_nibabel
+    global canvaPre
+    global scale_num
+    global preview
     if isinstance(canvas, FigureCanvasTkAgg):
         canvas.get_tk_widget().destroy()
     route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
     image_nibabel = nib.load(route)
-    image_data = image_nibabel.get_fdata()
-    tol=100
-    tau=150
-    while True:
-        segmentation = image_data >= tau
-        mBG = image_data[ segmentation == 0].mean()
-        mFG = image_data[ segmentation == 1].mean()
-
-        tau_post= 0.5 * (mBG + mFG)
-
-        if np.abs(tau - tau_post) < tol:
-            break
-        else:
-            tau = tau_post  
+    preview = image_nibabel.get_fdata()
+    create_preview(preview)
     
-     
+def create_preview(data):
     fig = plt.figure(figsize=(6, 6), dpi=100)
     ax = fig.add_subplot(111)
-    
-    ax.imshow(segmentation[:,:,20])
+    scaleNum = int(scale_num)
+    ax.imshow(data[:,:,scaleNum])
     ax.axis('off')
-    canvas = FigureCanvasTkAgg(fig, master=root)
+    fig.tight_layout(pad=0)
+    canvaPre = FigureCanvasTkAgg(fig, master=optionFrame) 
+    #canvas.get_tk_widget().place(relx=0.5, rely=0.5, anchor='center')
+    canvaPre.get_tk_widget().grid(column = 0,row = 4,padx=10,pady=10) 
+    canvaPre.get_tk_widget().config(width=200,height=200)
+    canvaPre.draw()
+    
+
+def combo_option():
+    global image_nibabel
+    global selected_value
+    selected_value = segmentationSelector.get()
+    if selected_value is None:
+        print("No hay data")
+    elif(selected_value == "Umbralizacion"):
+        open_image_umbralization(image_nibabel)
+    elif(selected_value == "K-means"):
+        open_image_Kmeans(image_nibabel)
+    elif(selected_value == "Region Growing"):
+        open_image_Kmeans(image_nibabel)
+
+def scale_widget_option(value):
+    global scale_num
+    global canvas
+    global canvaPre
+    global selected_value
+    if canvas is not None:
+        canvas.get_tk_widget().destroy()
+    if canvaPre is not None:
+        canvaPre.get_tk_widget().destroy()
+    if image_nibabel is not None:
+        scale_num = value
+
+        if selected_value == "Umbralizacion":
+            open_image_umbralization(image_nibabel)
+            create_preview(preview)
+        elif selected_value == "K-means":
+            open_image_Kmeans(image_nibabel)
+            create_preview(preview)
+        elif selected_value == "Region Growing":
+            open_image_regionGrowing(image_nibabel)
+            create_preview(preview)
+
+def open_image_umbralization(image):
+    global canvas
+    global scale_num
+    if isinstance(canvas, FigureCanvasTkAgg):
+        canvas.get_tk_widget().destroy()
+    segmentation = umbralization_segmentation(image)   
+    fig = plt.figure(figsize=(6, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    scaleNum = int(scale_num)
+    ax.imshow(segmentation[:,:,scaleNum])
+    ax.axis('off')
+    fig.tight_layout(pad=0)
+    canvas = FigureCanvasTkAgg(fig, master=imageFrame)
     canvas.get_tk_widget().pack()
     canvas.draw()
 
 #Por ahora solo lo hace en 3 separaciones, toca hacerlo dinamico
-def open_image_Kmeans():
+def open_image_Kmeans(image):
     global canvas
+    global scale_num
     if isinstance(canvas, FigureCanvasTkAgg):
         canvas.get_tk_widget().destroy()
-    route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
-    image_nibabel = nib.load(route)
-    image_data = image_nibabel.get_fdata()
-    #axial_slice = image_data[:, :, 20]
-    k1 = np.amin(image_data)
-    k2 = np.mean(image_data)
-    k3 = np.amax(image_data)
-
-    for i in range(0,3):
-        d1 = np.abs(k1 - image_data)  #diferencia entre la image_datan y el valor de referencia de cada cluster
-        d2 = np.abs(k2 - image_data)
-        d3 = np.abs(k3 - image_data)
-
-        segmentation = np.zeros_like(image_data)
-        segmentation[np.multiply(d1 < d2, d1 < d3)] = 0
-        segmentation[np.multiply(d2 < d1, d2 < d3)] = 1
-        segmentation[np.multiply(d3 < d1, d3 < d2)] = 2
-
-        k1 = image_data[ segmentation == 0].mean()
-        k2 = image_data[ segmentation == 1].mean()
-        k3 = image_data[ segmentation == 2].mean() 
-        
+    segmentation = kmeans_segmentation(image) 
     fig = plt.figure(figsize=(6, 6), dpi=100)
     ax = fig.add_subplot(111)
-    ax.imshow(segmentation[:,:,20])
+    scaleNum = int(scale_num)
+    ax.imshow(segmentation[:,:,scaleNum])
     ax.axis('off')
-    canvas = FigureCanvasTkAgg(fig, master=root)
+    fig.tight_layout(pad=0)
+    canvas = FigureCanvasTkAgg(fig, master=imageFrame)
     canvas.get_tk_widget().pack()
     canvas.draw()
-    global image_route
-    image_route = route
+    
 
 #El codigo de regio Growing se demora mucho, toca mejorarlo
-def open_image_regionGrowing():
-    route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
-    image_nibabel = nib.load(route)
-    image_data = image_nibabel.get_fdata()
-    tol = 3
-    segmentation = np.zeros_like(image_data)
-
-# Recorrer todos los voxels de la image_datan
-    for x in range(image_data.shape[0]):
-        for y in range(image_data.shape[1]):
-            for z in range(image_data.shape[2]):
-                if segmentation[x, y, z] == 0:  # Si el voxel no ha sido segmentado previamente
-                    valor_medio_cluster = image_data[x, y, z]
-                    queue = [(x, y, z)]  # Cola para realizar el crecimiento de la región
-
-                    # Aplicar el algoritmo de region growing usando una cola
-                    while queue:
-                        voxel = queue.pop(0)
-                        for dx in [-1, 0, 1]:
-                            for dy in [-1, 0, 1]:
-                                for dz in [-1, 0, 1]:
-                                    nx = voxel[0] + dx
-                                    ny = voxel[1] + dy
-                                    nz = voxel[2] + dz
-                                    if (0 <= nx < image_data.shape[0] and 0 <= ny < image_data.shape[1] and
-                                        0 <= nz < image_data.shape[2] and np.abs(valor_medio_cluster - image_data[nx, ny, nz]) < tol):
-                                        segmentation[nx, ny, nz] = 1
-                                        queue.append((nx, ny, nz))
-                                    else:
-                                        segmentation[nx, ny, nz] = 0
-                                        queue.append((nx, ny, nz))
-                    # Calcular el nuevo valor medio del cluster
-                    cluster_voxels = image_data[segmentation == 1]
-                    valor_medio_cluster = cluster_voxels.mean()
-
-        fig = plt.figure(figsize=(6, 6), dpi=100)
-        ax = fig.add_subplot(111)
-        
-        ax.imshow(segmentation[:,:,20])
-        ax.axis('off')
-        canvas = FigureCanvasTkAgg(fig, master=root)
-        canvas.get_tk_widget().pack()
-        global image_route
-        image_route = route   
+def open_image_regionGrowing(image):
+    global canvas
+    global scale_num
+    segmentation = regios_growing_segmentation(image)
+    fig = plt.figure(figsize=(6, 6), dpi=100)
+    ax = fig.add_subplot(111)
+    scaleNum = int(scale_num)
+    ax.imshow(segmentation[:,:,scaleNum])
+    ax.axis('off')
+    fig.tight_layout(pad=0)
+    canvas = FigureCanvasTkAgg(fig, master=imageFrame)
+    canvas.get_tk_widget().pack()
+     
 
    
-
+#Creacion de componentes de la interfaz
 
 root=Tk()
 root.title("Cargar Imagen")
-root.config(bg="black")
-root.geometry("650x350")
+#root.geometry("800x600")
 
-buttonUmbra = Button(root, text="Select an image (umbralization)",command=open_image_umbralization)
-buttonUmbra.pack()
+#---------------------- FRAME DE LAS OPCIONES
+optionFrame = Frame(root)
+optionFrame.grid(column=0, row=0)
+optionFrame.config(width=300,height=600, bg='dark turquoise')
+#------------------------ FRAME DE LA VISUALIZACION DE LA IMAGEN
+imageFrame = Frame(root)
+imageFrame.grid(column=1, row=0)
+imageFrame.config(width=500,height=600, bg='turquoise')
 
-buttonKmeans = Button(root, text="Select an image (K-means)",command=open_image_Kmeans)
-buttonKmeans.pack()
 
-#buttonRegionGrowing = Button(root, text="Select an image (regionGrowing)",command=open_image_regionGrowing)
-#buttonRegionGrowing.pack()
+for i in range(10):
+    optionFrame.grid_rowconfigure(i, weight=1)
+    optionFrame.grid_columnconfigure(i, weight=1)
+# for i in range(3):
+#     imageFrame.grid_rowconfigure(i, weight=1)
+#     imageFrame.grid_columnconfigure(i, weight=1)
 
-image_route = None
+buttonImageSelector = Button(optionFrame, text="Upload an image .nii.gz",command=recover_image)
+buttonImageSelector.grid(column = 0, row = 0,padx=100,pady=10)
+
+segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing"])
+segmentationSelector.grid(column = 0, row = 1, padx = 100, pady = 10)
+
+scaleWidget = Scale(optionFrame,from_=0,to=48,orient= HORIZONTAL, command=scale_widget_option)
+scaleWidget.grid(column=0,row=2,padx=10,pady=100)
+
+buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option)
+buttonSegmentate.grid(column = 0, row = 3,padx=10,pady=100)
+
+
+
 
 root.mainloop()
