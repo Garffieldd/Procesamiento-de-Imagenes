@@ -1,7 +1,7 @@
 import numpy as np
 
-def regios_growing_segmentation(image):
-    image_data = image.get_fdata()
+def region_growing_segmentation(image_data):
+    #image_data = image.get_fdata()
     tol = 3
     segmentation = np.zeros_like(image_data)
 

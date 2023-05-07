@@ -1,12 +1,16 @@
 import numpy as np
-def umbralization_segmentation(image):
-    image_data = image.get_fdata()
+def umbralization_segmentation(image_data):
+    #image_data = image.get_fdata()
     tol=100
     tau=150
     while True:
         segmentation = image_data >= tau
         mBG = image_data[ segmentation == 0].mean()
-        mFG = image_data[ segmentation == 1].mean()
+        if np.sum(segmentation == 1) == 0:
+            mFG = 0
+        else:
+            mFG = image_data[segmentation == 1].mean()
+        
 
         tau_post= 0.5 * (mBG + mFG)
 

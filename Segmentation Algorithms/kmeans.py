@@ -1,7 +1,7 @@
 import numpy as np
 
-def kmeans_segmentation(image):
-    image_data = image.get_fdata()
+def kmeans_segmentation(image_data):
+    #image_data = image.get_fdata()
         #axial_slice = image_data[:, :, 20]
     k1 = np.amin(image_data)
     k2 = np.mean(image_data)
