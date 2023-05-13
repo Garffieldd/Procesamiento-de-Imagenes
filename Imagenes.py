@@ -9,10 +9,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import sys
 sys.path.append('./Segmentation Algorithms')
 sys.path.append('./Standarization')
+sys.path.append('./Noise Remotion')
 from umbralization import umbralization_segmentation
 from kmeans import kmeans_segmentation
 from region_growing import region_growing_segmentation
 from StandarizationAlgorithms import *
+from NoiseRemotion import *
 
 #canvas = None
 image_data = None
@@ -64,6 +66,19 @@ def combo_option_standarization(image):
         image_data = white_stripe(image)
         preview = white_stripe(image)
 
+def combo_option_noise_remotion(data):
+    global image_data
+    global preview
+    selected_sound_remotion = noiseRemotionSelector.get()
+    if (selected_sound_remotion == "Mean filter"):
+        image_data = mean_filter(data)
+        preview = mean_filter(data)
+        create_preview(preview)
+    elif(selected_sound_remotion == "Medium filter"):
+        image_data = mean_filter(data)
+        preview = mean_filter(data)
+        create_preview(preview)
+
 def create_preview(data):
     global scale_num
     figPre.clf()
@@ -72,6 +87,7 @@ def create_preview(data):
     ax.imshow(data[:,:,scaleNum])
     ax.axis('off')
     canvaPre.draw()  
+
 
 
 
@@ -124,27 +140,16 @@ def segmentation_params():
     entryTau.grid_remove()
     entryK.grid_remove()
     if selected_value == "Umbralizacion":
-        labelTol.grid(column = 0, row = 3, padx = 10, pady = 10)
-        entryTol.grid(column = 1, row = 3, padx = 10, pady = 10)
-        labelTau.grid(column = 2, row = 3, padx = 10, pady = 10)
-        entryTau.grid(column = 3, row = 3, padx = 10, pady = 10)
+        labelTol.grid(column = 0, row = 4, padx = 10, pady = 10)
+        entryTol.grid(column = 1, row = 4, padx = 10, pady = 10)
+        labelTau.grid(column = 2, row = 4, padx = 10, pady = 10)
+        entryTau.grid(column = 3, row = 4, padx = 10, pady = 10)
     elif selected_value == "K-means":
-        labelK.grid(column = 0, row = 3, padx = 10, pady = 10)
-        entryK.grid(column = 1, row = 3, padx = 10, pady = 10)
+        labelK.grid(column = 0, row = 4, padx = 10, pady = 10)
+        entryK.grid(column = 1, row = 4, padx = 10, pady = 10)
     elif selected_value == "Region Growing":
-        labelTol.grid(column = 0, row = 3, padx = 10, pady = 10)
-        entryTol.grid(column = 1, row = 3, padx = 10, pady = 10)
-
-# def histogram_matching_second_img():
-#     selected_value = standarizationSelector.get()
-#     buttonImageSelector.grid_remove()
-#     buttonImageSelector_target.grid_remove()
-
-#     if selected_value == "Histogram matching":
-#         buttonImageSelector.grid(column = 0, row = 0, padx = 10 , pady = 10)
-#         buttonImageSelector_target.grid(column = 1, row = 0, padx = 10 , pady = 10)
-#     else:
-#         buttonImageSelector.grid(column = 0, row = 0, padx = 10 , pady = 10,columnspan=2)
+        labelTol.grid(column = 0, row = 4, padx = 10, pady = 10)
+        entryTol.grid(column = 1, row = 4, padx = 10, pady = 10)
 
 
 
@@ -219,7 +224,7 @@ canvas.get_tk_widget().pack()
 figPre = plt.figure(figsize=(6, 6), dpi=100)
 figPre.tight_layout(pad=0)
 canvaPre = FigureCanvasTkAgg(figPre, master=optionFrame) 
-canvaPre.get_tk_widget().grid(column = 0,row = 6,padx=10,pady=10, columnspan=2) 
+canvaPre.get_tk_widget().grid(column = 0,row = 7,padx=10,pady=10, columnspan=2) 
 canvaPre.get_tk_widget().config(width=200,height=200)
 figPre.set_facecolor("#00CED1")
 
@@ -243,11 +248,18 @@ standarizationSelector = ttk.Combobox(optionFrame,values=["Intensity rescaling",
 standarizationSelector.grid(column = 1, row = 1, padx = 10, pady = 10)
 standarizationSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_standarization(selected_image))
 
+labelNoiseRemotion = Label(optionFrame, text = "Noise remotion technique: ",  bg=optionFrame["bg"])
+labelNoiseRemotion.grid(column = 0, row = 2, padx = 10, pady = 10)
+noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter"])
+noiseRemotionSelector.grid(column = 1, row = 2, padx = 10, pady = 10)
+noiseRemotionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_noise_remotion(image_data))
+
+
 
 labelSegmentation = Label(optionFrame, text = "Segmentation algorithm: ",  bg=optionFrame["bg"])
-labelSegmentation.grid(column = 0, row = 2, padx = 10, pady = 10)
+labelSegmentation.grid(column = 0, row = 3, padx = 10, pady = 10)
 segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing"])
-segmentationSelector.grid(column = 1, row = 2, padx = 10, pady = 10)
+segmentationSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
 segmentationSelector.bind("<<ComboboxSelected>>", lambda event: segmentation_params())
 
 labelTol = Label(optionFrame, text = "Tolerance:",  bg=optionFrame["bg"])
@@ -261,10 +273,12 @@ entryK = Entry(optionFrame)
 
 
 scaleWidget = Scale(optionFrame,from_=0,to=48,orient= HORIZONTAL, command=scale_widget_option)
-scaleWidget.grid(column=0,row=4,padx=10,pady=20, columnspan=2)
+scaleWidget.grid(column=1,row=5,padx=10,pady=20)
+labelScale= Label(optionFrame, text = "Z: ",  bg=optionFrame["bg"])
+labelScale.grid(column=0,row=5,padx=10,pady=20)
 
 buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option_segmentation)
-buttonSegmentate.grid(column = 0, row = 5,padx=10,pady=20,columnspan=2)
+buttonSegmentate.grid(column = 0, row = 6,padx=10,pady=20,columnspan=2)
 
 
 root.mainloop()

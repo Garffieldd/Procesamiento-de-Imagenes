@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
         "./Segmentation Algorithms",
-        "./Standarization"
+        "./Standarization",
+        "./Noise Remotion"
     ]
 }
