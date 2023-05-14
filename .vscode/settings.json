@@ -2,6 +2,7 @@
     "python.analysis.extraPaths": [
         "./Segmentation Algorithms",
         "./Standarization",
-        "./Noise Remotion"
+        "./Noise Remotion",
+        "./Edge detection"
     ]
 }

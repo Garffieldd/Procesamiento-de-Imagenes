@@ -27,8 +27,11 @@ def median_filter(image_data):
                 # Extraer la vecindad 3x3x3
                 neighborhood = image_data[x-1:x+2, y-1:y+2, z-1:z+2]
                 
+                # Ordenar la vecindad en orden ascendente
+                sorted_neighborhood = np.sort(neighborhood, axis=None)
+                
                 # Calcular la mediana de la vecindad
-                median_value = np.median(neighborhood)
+                median_value = np.median(sorted_neighborhood)
                 
                 # Asignar el valor mediano al píxel filtrado
                 filtered_image[x, y, z] = median_value
