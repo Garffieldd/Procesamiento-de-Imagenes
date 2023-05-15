@@ -6,6 +6,7 @@ from scipy import stats as st
 import statistics as stat
 
 def intensity_rescaling(image):
+    print("entre")
     image_data = image.get_fdata()
     min_value = image_data.min()
 
@@ -25,7 +26,6 @@ def z_score_tranformation(image):
 
 def histogram_matching(imgOrigin,imgTarget):
     #histogram
-    print("entreeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
     data_orig = imgOrigin.get_fdata()
     data_target = imgTarget.get_fdata()
 

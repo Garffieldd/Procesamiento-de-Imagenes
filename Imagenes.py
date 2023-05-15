@@ -29,16 +29,20 @@ fig = None
 tol = None
 tau = None
 k = None
-
-
+segmentation = None
 
 
 # Funcion que se llama cuando se carga la imagen
 def recover_image():
     global selected_image
     global fig
+    global preview
+    global image_data
     route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
     selected_image = nib.load(route)
+    image_data = selected_image.get_fdata()
+    preview = selected_image.get_fdata()
+    create_preview(preview)    
     
 def recover_image_target():
     global selected_image_target
@@ -106,11 +110,14 @@ def combo_option_segmentation():
     if selected_segmentation is None:
         print("No hay data")
     elif(selected_segmentation == "Umbralizacion"):
-        open_image_umbralization(image_data,tol,tau)
+        apply_umbralization(image_data,tol,tau)
+        open_image_umbralization()
     elif(selected_segmentation == "K-means"):
-        open_image_Kmeans(image_data,k)
+        apply_kmeans(image_data,k)
+        open_image_Kmeans()
     elif(selected_segmentation == "Region Growing"):
-        open_image_regionGrowing(image_data,tol)
+        apply_regionGrowing(image_data,tol)
+        open_image_regionGrowing()
 
 def scale_widget_option(value):
     global scale_num
@@ -121,17 +128,17 @@ def scale_widget_option(value):
     global k
     global preview
     global image_data
-    if image_data is not None:
+    if image_data is not None or preview is not None:
         scale_num = value
         create_preview(preview) 
         if selected_segmentation == "Umbralizacion":
-            open_image_umbralization(image_data,tol,tau)
+            open_image_umbralization()
             
         elif selected_segmentation == "K-means":
-            open_image_Kmeans(image_data,k)
+            open_image_Kmeans()
             
         elif selected_segmentation == "Region Growing":
-            open_image_regionGrowing(image_data,tol) 
+            open_image_regionGrowing() 
 
 def segmentation_params():
     selected_value = segmentationSelector.get()
@@ -164,40 +171,48 @@ def combo_option_edge_detection(data):
         preview = edge_detection_gradient(data)
         create_preview(preview)
 
-def open_image_umbralization(image,tol,tau):
-    global scale_num
+def apply_umbralization(image,tol,tau):
+    global segmentation
     segmentation = umbralization_segmentation(image, tol, tau) 
+
+def open_image_umbralization():
+    global scale_num
+    #segmentation = umbralization_segmentation(image, tol, tau) 
     fig.clf()
     ax = fig.add_subplot(111)
     scaleNum = int(scale_num)
     ax.imshow(segmentation[:,:,scaleNum])
     ax.axis('off')
     canvas.draw()  
-    
 
-def open_image_Kmeans(image,k):
+def apply_kmeans(image,k):
+    global segmentation
+    segmentation = kmeans_segmentation(image, k)    
+
+def open_image_Kmeans():
     global scale_num
-
-    segmentation = kmeans_segmentation(image, k) 
+    #segmentation = kmeans_segmentation(image, k) 
     fig.clf()
     ax = fig.add_subplot(111)
     scaleNum = int(scale_num)
     ax.imshow(segmentation[:,:,scaleNum])
     ax.axis('off')
     canvas.draw() 
+  
     
-
-#El codigo de regio Growing se demora mucho, toca mejorarlo
-def open_image_regionGrowing(image,tol):
-    global scale_num
+def apply_regionGrowing(image,tol):
+    global segmentation
     segmentation = region_growing_segmentation(image, tol)
+
+def open_image_regionGrowing():
+    global scale_num
+    #segmentation = region_growing_segmentation(image, tol)
     fig.clf()
     ax = fig.add_subplot(111)
     scaleNum = int(scale_num)
     ax.imshow(segmentation[:,:,scaleNum])
     ax.axis('off')
     canvas.draw() 
-
 
 def close_interface():
     plt.close(fig)
@@ -211,7 +226,7 @@ def close_interface():
 #Creacion de componentes de la interfaz
 
 root=Tk()
-root.title("Cargar Imagen")
+root.title("Segmentación de tejidos cerebrales en resonancia magnética")
 root.protocol("WM_DELETE_WINDOW", close_interface)
 
 root.grid_rowconfigure(0, weight=1)
@@ -235,7 +250,7 @@ canvas.get_tk_widget().pack()
 figPre = plt.figure(figsize=(6, 6), dpi=100)
 figPre.tight_layout(pad=0)
 canvaPre = FigureCanvasTkAgg(figPre, master=optionFrame) 
-canvaPre.get_tk_widget().grid(column = 0,row = 8,padx=10,pady=10, columnspan=2) 
+canvaPre.get_tk_widget().grid(column = 0,row = 9,padx=10,pady=10, columnspan=2) 
 canvaPre.get_tk_widget().config(width=200,height=200)
 figPre.set_facecolor("#00CED1")
 
@@ -286,13 +301,15 @@ entryTol = Entry(optionFrame)
 entryTau = Entry(optionFrame)
 entryK = Entry(optionFrame)
 
-scaleWidget = Scale(optionFrame,from_=0,to=48,orient= HORIZONTAL, command=scale_widget_option)
+scaleWidget = Scale(optionFrame,from_=0,to=47,orient= HORIZONTAL, command=scale_widget_option)
 scaleWidget.grid(column=1,row=6,padx=10,pady=20)
 labelScale= Label(optionFrame, text = "Z: ",  bg=optionFrame["bg"])
 labelScale.grid(column=0,row=6,padx=10,pady=20)
 
 buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option_segmentation)
 buttonSegmentate.grid(column = 0, row = 7,padx=10,pady=20,columnspan=2)
+
+
 
 
 root.mainloop()
