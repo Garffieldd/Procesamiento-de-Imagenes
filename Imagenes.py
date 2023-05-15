@@ -81,8 +81,8 @@ def combo_option_noise_remotion(data):
         preview = mean_filter(data)
         create_preview(preview)
     elif(selected_sound_remotion == "Medium filter"):
-        image_data = mean_filter(data)
-        preview = mean_filter(data)
+        image_data = median_filter(data)
+        preview = median_filter(data)
         create_preview(preview)
 
 def create_preview(data):

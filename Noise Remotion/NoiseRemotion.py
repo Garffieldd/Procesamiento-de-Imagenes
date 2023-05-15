@@ -21,9 +21,9 @@ def mean_filter(image_data):
 def median_filter(image_data):
     filtered_image = np.zeros_like(image_data)
 
-    for x in range(0, image_data.shape[0]-1):
-        for y in range(0, image_data.shape[1]-1):
-            for z in range(0, image_data.shape[2]-1):
+    for x in range(1, image_data.shape[0]-1):
+        for y in range(1, image_data.shape[1]-1):
+            for z in range(1, image_data.shape[2]-1):
                 # Extraer la vecindad 3x3x3
                 neighborhood = image_data[x-1:x+2, y-1:y+2, z-1:z+2]
                 
