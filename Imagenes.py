@@ -53,6 +53,9 @@ def recover_image_target():
 def combo_option_standarization(image):
     global preview
     global image_data
+   
+    labelPerc.grid_remove()
+    labelPerc.grid_remove()
     selected_standarization = standarizationSelector.get()
     if(selected_standarization == "Intensity rescaling"):
         image_data = intensity_rescaling(image)
@@ -63,14 +66,23 @@ def combo_option_standarization(image):
         preview = z_score_tranformation(image)
         create_preview(preview)
     elif(selected_standarization == "Histogram matching"):
+        labelPerc.grid(column = 0, row = 2, padx = 10, pady = 10)
+        entryPerc.grid(column = 1, row = 2, padx = 10, pady = 10, sticky='w')
+        buttonStandarizateHistogram.grid(column = 1, row = 2, padx = 10, pady = 10 , sticky='e')
         # route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
         # selected_image_target = nib.load(route)
-        image_data = histogram_matching(image,selected_image_target)
-        preview = histogram_matching(image,selected_image_target)
-        create_preview(preview)
+        
     elif(selected_standarization == "White straping"):
         image_data = white_stripe(image)
         preview = white_stripe(image)
+
+def do_histogram_matching(image):
+    global preview
+    global image_data
+    percentile = int(entryPerc.get()) if entryPerc.get() else None
+    image_data = histogram_matching(selected_image_target,image,percentile)
+    preview = histogram_matching(selected_image_target,image,percentile)
+    create_preview(preview)
 
 def combo_option_noise_remotion(data):
     global image_data
@@ -140,6 +152,10 @@ def scale_widget_option(value):
         elif selected_segmentation == "Region Growing":
             open_image_regionGrowing() 
 
+
+    
+
+
 def segmentation_params():
     selected_value = segmentationSelector.get()
     labelTol.grid_remove()
@@ -149,16 +165,16 @@ def segmentation_params():
     entryTau.grid_remove()
     entryK.grid_remove()
     if selected_value == "Umbralizacion":
-        labelTol.grid(column = 0, row = 5, padx = 10, pady = 10)
-        entryTol.grid(column = 1, row = 5, padx = 10, pady = 10)
-        labelTau.grid(column = 2, row = 5, padx = 10, pady = 10)
-        entryTau.grid(column = 3, row = 5, padx = 10, pady = 10)
+        labelTol.grid(column = 0, row = 6, padx = 10, pady = 10)
+        entryTol.grid(column = 1, row = 6, padx = 10, pady = 10)
+        labelTau.grid(column = 2, row = 6, padx = 10, pady = 10)
+        entryTau.grid(column = 3, row = 6, padx = 10, pady = 10)
     elif selected_value == "K-means":
-        labelK.grid(column = 0, row = 5, padx = 10, pady = 10)
-        entryK.grid(column = 1, row = 5, padx = 10, pady = 10)
+        labelK.grid(column = 0, row = 6, padx = 10, pady = 10)
+        entryK.grid(column = 1, row = 6, padx = 10, pady = 10)
     elif selected_value == "Region Growing":
-        labelTol.grid(column = 0, row = 5, padx = 10, pady = 10)
-        entryTol.grid(column = 1, row = 5, padx = 10, pady = 10)
+        labelTol.grid(column = 0, row = 6, padx = 10, pady = 10)
+        entryTol.grid(column = 1, row = 6, padx = 10, pady = 10)
 
 
 
@@ -275,23 +291,26 @@ standarizationSelector.grid(column = 1, row = 1, padx = 10, pady = 10)
 standarizationSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_standarization(selected_image))
 
 labelNoiseRemotion = Label(optionFrame, text = "Noise remotion technique: ",  bg=optionFrame["bg"])
-labelNoiseRemotion.grid(column = 0, row = 2, padx = 10, pady = 10)
+labelNoiseRemotion.grid(column = 0, row = 3, padx = 10, pady = 10)
 noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter"])
-noiseRemotionSelector.grid(column = 1, row = 2, padx = 10, pady = 10)
+noiseRemotionSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
 noiseRemotionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_noise_remotion(image_data))
 
 
 labelEdgeDetection = Label(optionFrame, text = "Edge detection algorithm: ",  bg=optionFrame["bg"])
-labelEdgeDetection.grid(column = 0, row = 3, padx = 10, pady = 10)
+labelEdgeDetection.grid(column = 0, row = 4, padx = 10, pady = 10)
 edgeDetectionSelector = ttk.Combobox(optionFrame,values=["Gradient"])
-edgeDetectionSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
+edgeDetectionSelector.grid(column = 1, row = 4, padx = 10, pady = 10)
 edgeDetectionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_edge_detection(image_data))
 
 labelSegmentation = Label(optionFrame, text = "Segmentation algorithm: ",  bg=optionFrame["bg"])
-labelSegmentation.grid(column = 0, row = 4, padx = 10, pady = 10)
+labelSegmentation.grid(column = 0, row = 5, padx = 10, pady = 10)
 segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing"])
-segmentationSelector.grid(column = 1, row = 4, padx = 10, pady = 10)
+segmentationSelector.grid(column = 1, row = 5, padx = 10, pady = 10)
 segmentationSelector.bind("<<ComboboxSelected>>", lambda event: segmentation_params())
+
+labelPerc = Label(optionFrame, text = "Percentile:",  bg=optionFrame["bg"])
+entryPerc = Entry(optionFrame)
 
 labelTol = Label(optionFrame, text = "Tolerance:",  bg=optionFrame["bg"])
 labelTau = Label(optionFrame, text = "Tau:",  bg=optionFrame["bg"])
@@ -302,12 +321,14 @@ entryTau = Entry(optionFrame)
 entryK = Entry(optionFrame)
 
 scaleWidget = Scale(optionFrame,from_=0,to=47,orient= HORIZONTAL, command=scale_widget_option)
-scaleWidget.grid(column=1,row=6,padx=10,pady=20)
+scaleWidget.grid(column=1,row=7,padx=10,pady=20)
 labelScale= Label(optionFrame, text = "Z: ",  bg=optionFrame["bg"])
-labelScale.grid(column=0,row=6,padx=10,pady=20)
+labelScale.grid(column=0,row=7,padx=10,pady=20)
 
 buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option_segmentation)
-buttonSegmentate.grid(column = 0, row = 7,padx=10,pady=20,columnspan=2)
+buttonSegmentate.grid(column = 0, row = 8,padx=10,pady=20,columnspan=2)
+
+buttonStandarizateHistogram = Button(optionFrame, text="Standarizate",command=lambda: do_histogram_matching(selected_image))
 
 
 
