@@ -116,10 +116,11 @@ def combo_option_noise_remotion(data):
 
 def create_preview(data):
     global scale_num
+    print(scale_num)
     figPre.clf()
     ax = figPre.add_subplot(111)
     scaleNum = int(scale_num)
-    ax.imshow(data[:,:,scaleNum], cmap='gray')
+    ax.imshow(data[:,:,scaleNum],cmap='gray')
     ax.axis('off')
     canvaPre.draw()  
 
@@ -221,10 +222,12 @@ def combo_option_edge_detection(data):
 
 def apply_umbralization(image,tol,tau):
     global segmentation
+    global selected_image
     segmentation = umbralization_segmentation(image, tol, tau)
-    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    affine = selected_image.affine
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    sitk.WriteImage(sitk_segmentation, output_image_path)  
+    nib.save(nifti_img, output_image_path)   
 
 def open_image_umbralization():
     global scale_num
@@ -240,7 +243,8 @@ def apply_kmeans(image,k):
     global segmentation
     global selected_image
     segmentation = kmeans_segmentation(image, k)  
-    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
+    affine = selected_image.affine
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
     nib.save(nifti_img, output_image_path)    
 
@@ -257,8 +261,10 @@ def open_image_Kmeans():
     
 def apply_regionGrowing(image,tol):
     global segmentation
+    global selected_image
     segmentation = region_growing_segmentation(image, tol)
-    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
+    affine = selected_image.affine
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
     nib.save(nifti_img, output_image_path)  
 
@@ -274,10 +280,12 @@ def open_image_regionGrowing():
 
 def apply_gmm(image,k,th):
     global segmentation
+    global selected_image
     segmentation = gmm(image, k,th)
-    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
+    affine = selected_image.affine
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    nib.save(nifti_img, output_image_path)  
+    nib.save(nifti_img, output_image_path)   
     
 def open_image_gmm():
     global scale_num
@@ -291,10 +299,14 @@ def open_image_gmm():
 
 def do_register():
     #selected_value = segmentationSelector.get()
-    if segmentation is not None:
-        register_and_get_image_data('./SegmentationResults/SegmentationResult.nii.gz',routeM)
+    # if segmentation is not None:
+    #     register_and_get_image_data('./SegmentationResults/SegmentationResult.nii.gz',routeM)
+    # else:
+    #     messagebox.showinfo("Error","Primero debes segmentar la imagen")
+    if routeM is not None:
+        register_and_get_image_data(routeM)
     else:
-        messagebox.showinfo("Error","Primero debes segmentar la imagen")
+        messagebox.showinfo("Error","Primero debes escoger una imagen")
 
 def update_scale_range():
     # Obtener el tamaño del eje Z una vez que la imagen se ha cargado

@@ -4,18 +4,18 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from tkinter import filedialog
 
-def register_and_get_image_data(moving_image_path,moving):
+def register_and_get_image_data(moving):
     # Load fixed and moving images
     route = filedialog.askopenfilename(filetypes=[("Image files", "FLAIR.nii.gz")])
     print("soy la ruta",route)
     fixed_image = sitk.ReadImage(route)
     moving_image = sitk.ReadImage(moving)
-    moving_image_segmentation = sitk.ReadImage(moving_image_path)
+    #moving_image_segmentation = sitk.ReadImage(moving_image_path)
 
     # Convert image types
     fixed_image = sitk.Cast(fixed_image, sitk.sitkFloat32)
     moving_image = sitk.Cast(moving_image, sitk.sitkFloat32)
-    moving_image_segmentation = sitk.Cast(moving_image_segmentation, sitk.sitkFloat32)
+    #moving_image_segmentation = sitk.Cast(moving_image_segmentation, sitk.sitkFloat32)
 
     # Define the registration components
     registration_method = sitk.ImageRegistrationMethod()
@@ -40,7 +40,7 @@ def register_and_get_image_data(moving_image_path,moving):
     registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
 
     # Perform registration
-    final_transform = registration_method.Execute(fixed_image, moving_image_segmentation)
+    final_transform = registration_method.Execute(fixed_image, moving_image)
 
     # Resample the moving image to match the fixed image dimensions and orientation
     
