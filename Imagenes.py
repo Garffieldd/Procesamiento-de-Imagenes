@@ -22,6 +22,7 @@ from NoiseRemotion import *
 from EdgeDetection import *
 from Register import register_and_get_image_data
 import SimpleITK as sitk
+from ttkbootstrap import Style
 
 #canvas = None
 image_data = None
@@ -108,17 +109,17 @@ def combo_option_noise_remotion(data):
         image_data = mean_filter_with_borders(data)
         preview = mean_filter_with_borders(data)
         create_preview(preview)
-    elif(selected_sound_remotion == "Medium filter with borders"):
-        image_data = median_filter_with_borders(data)
-        preview = median_filter_with_borders(data)
-        create_preview(preview)
+    # elif(selected_sound_remotion == "Medium filter with borders"):
+    #     image_data = median_filter_with_borders(data)
+    #     preview = median_filter_with_borders(data)
+    #     create_preview(preview)
 
 def create_preview(data):
     global scale_num
     figPre.clf()
     ax = figPre.add_subplot(111)
     scaleNum = int(scale_num)
-    ax.imshow(data[:,:,scaleNum])
+    ax.imshow(data[:,:,scaleNum], cmap='gray')
     ax.axis('off')
     canvaPre.draw()  
 
@@ -257,9 +258,9 @@ def open_image_Kmeans():
 def apply_regionGrowing(image,tol):
     global segmentation
     segmentation = region_growing_segmentation(image, tol)
-    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    sitk.WriteImage(sitk_segmentation, output_image_path)  
+    nib.save(nifti_img, output_image_path)  
 
 def open_image_regionGrowing():
     global scale_num
@@ -274,9 +275,9 @@ def open_image_regionGrowing():
 def apply_gmm(image,k,th):
     global segmentation
     segmentation = gmm(image, k,th)
-    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
     output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    sitk.WriteImage(sitk_segmentation, output_image_path)  
+    nib.save(nifti_img, output_image_path)  
     
 def open_image_gmm():
     global scale_num
@@ -318,6 +319,9 @@ root.protocol("WM_DELETE_WINDOW", close_interface)
 
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
+style = Style(theme='pulse')#lumen pulse simplex
+style.configure('TLabel', font=('Arial', 12))
+style.configure('TButton', font=('Arial', 12))
 #---------------------- FRAME DE LAS OPCIONES
 optionFrame = Frame(root)
 optionFrame.grid(column=0, row=0, sticky="nsew")
@@ -325,10 +329,10 @@ optionFrame.config(width=300,height=600, bg='dark turquoise')
 #------------------------ FRAME DE LA VISUALIZACION DE LA IMAGEN
 imageFrame = Frame(root)
 imageFrame.grid(column=1, row=0, sticky="nsew")
-imageFrame.config(width=500,height=root["height"], bg='turquoise')
+imageFrame.config(width=500,height=root["height"], bg='MidnightBlue')
 
 #canvas de la imagen segmentada
-fig = plt.figure(figsize=(6, 6), dpi=100)
+fig = plt.figure(figsize=(6, 6), dpi=100,facecolor="MidnightBlue")
 fig.tight_layout(pad=0)
 canvas = FigureCanvasTkAgg(fig, master=imageFrame)
 canvas.get_tk_widget().pack()
@@ -355,38 +359,47 @@ buttonImageSelector_target = Button(optionFrame, text="Upload an target image (h
 buttonImageSelector_target.grid(column = 1, row = 0, padx = 10 , pady = 10)
 
 
-labelStandarization = Label(optionFrame, text = "Standarization technique: ",  bg=optionFrame["bg"])
-labelStandarization.grid(column = 0, row = 1, padx = 10, pady = 10)
+labelStandarization = Label(optionFrame, text = "Standarization technique: ",  bg='dark turquoise')
+labelStandarization.grid(column = 0, row = 1, padx = 10, pady = 10) 
+labelStandarization.configure(background=optionFrame["bg"])
 standarizationSelector = ttk.Combobox(optionFrame,values=["Intensity rescaling","Z-score transformation","Histogram matching","White straping"])
 standarizationSelector.grid(column = 1, row = 1, padx = 10, pady = 10)
 standarizationSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_standarization(selected_image))
 
 labelNoiseRemotion = Label(optionFrame, text = "Noise remotion technique: ",  bg=optionFrame["bg"])
 labelNoiseRemotion.grid(column = 0, row = 3, padx = 10, pady = 10)
-noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter","Mean filter with borders","Medium filter with borders"])
+labelNoiseRemotion.configure(background=optionFrame["bg"])
+noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter","Mean filter with borders"])
 noiseRemotionSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
 noiseRemotionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_noise_remotion(image_data))
 
 
 labelEdgeDetection = Label(optionFrame, text = "Edge detection algorithm: ",  bg=optionFrame["bg"])
 labelEdgeDetection.grid(column = 0, row = 4, padx = 10, pady = 10)
+labelEdgeDetection.configure(background=optionFrame["bg"])
 edgeDetectionSelector = ttk.Combobox(optionFrame,values=["Gradient"])
 edgeDetectionSelector.grid(column = 1, row = 4, padx = 10, pady = 10)
 edgeDetectionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_edge_detection(image_data))
 
 labelSegmentation = Label(optionFrame, text = "Segmentation algorithm: ",  bg=optionFrame["bg"])
 labelSegmentation.grid(column = 0, row = 5, padx = 10, pady = 10)
+labelSegmentation.configure(background=optionFrame["bg"])
 segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing","Gmm"])
 segmentationSelector.grid(column = 1, row = 5, padx = 10, pady = 10)
 segmentationSelector.bind("<<ComboboxSelected>>", lambda event: segmentation_params())
 
 labelPerc = Label(optionFrame, text = "Percentile:",  bg=optionFrame["bg"])
+labelPerc.configure(background=optionFrame["bg"])
 entryPerc = Entry(optionFrame)
 
-labelTol = Label(optionFrame, text = "Tolerance:",  bg=optionFrame["bg"])
-labelTau = Label(optionFrame, text = "Tau:",  bg=optionFrame["bg"])
-labelK = Label(optionFrame, text = "K:",  bg=optionFrame["bg"])
-labelTh = Label(optionFrame, text = "Threshold:",  bg=optionFrame["bg"])
+labelTol = Label(optionFrame, text = "Tolerance:")
+labelTol.configure(background=optionFrame["bg"])
+labelTau = Label(optionFrame, text = "Tau:")
+labelTau.configure(background=optionFrame["bg"])
+labelK = Label(optionFrame, text = "K:")
+labelK.configure(background=optionFrame["bg"])
+labelTh = Label(optionFrame, text = "Threshold:")
+labelTh.configure(background=optionFrame["bg"])
 
 entryTol = Entry(optionFrame)
 entryTau = Entry(optionFrame)
@@ -395,8 +408,9 @@ entryTh = Entry(optionFrame)
 
 scaleWidget = Scale(optionFrame,from_=0,to= 0,orient= HORIZONTAL, command=scale_widget_option)
 scaleWidget.grid(column=1,row=7,padx=10,pady=20)
-labelScale= Label(optionFrame, text = "Z: ",  bg=optionFrame["bg"])
+labelScale= Label(optionFrame, text = "Z: ")
 labelScale.grid(column=0,row=7,padx=10,pady=20)
+labelScale.configure(background=optionFrame["bg"])
 
 buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option_segmentation)
 buttonSegmentate.grid(column = 0, row = 8,padx=10,pady=20,columnspan=2)
