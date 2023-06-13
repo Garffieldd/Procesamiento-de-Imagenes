@@ -4,10 +4,9 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 from tkinter import filedialog
 
-def register_and_get_image_data(moving):
+def register_and_get_image_data_itk(moving):
     # Load fixed and moving images
     route = filedialog.askopenfilename(filetypes=[("Image files", "FLAIR.nii.gz")])
-    print("soy la ruta",route)
     fixed_image = sitk.ReadImage(route)
     moving_image = sitk.ReadImage(moving)
     #moving_image_segmentation = sitk.ReadImage(moving_image_path)

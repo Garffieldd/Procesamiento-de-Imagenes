@@ -20,8 +20,8 @@ from gmm import gmm
 from StandarizationAlgorithms import *
 from NoiseRemotion import *
 from EdgeDetection import *
-from Register import register_and_get_image_data
-import SimpleITK as sitk
+#from RegisterAnts import register_and_get_image_data
+from register import register_and_get_image_data_itk
 from ttkbootstrap import Style
 
 #canvas = None
@@ -120,7 +120,7 @@ def create_preview(data):
     figPre.clf()
     ax = figPre.add_subplot(111)
     scaleNum = int(scale_num)
-    ax.imshow(data[:,:,scaleNum],cmap='gray')
+    ax.imshow(data[:,:,scaleNum])
     ax.axis('off')
     canvaPre.draw()  
 
@@ -299,14 +299,14 @@ def open_image_gmm():
 
 def do_register():
     #selected_value = segmentationSelector.get()
-    # if segmentation is not None:
-    #     register_and_get_image_data('./SegmentationResults/SegmentationResult.nii.gz',routeM)
-    # else:
-    #     messagebox.showinfo("Error","Primero debes segmentar la imagen")
-    if routeM is not None:
-        register_and_get_image_data(routeM)
+    if segmentation is not None:
+        register_and_get_image_data_itk('./SegmentationResults/SegmentationResult.nii.gz')
     else:
-        messagebox.showinfo("Error","Primero debes escoger una imagen")
+        messagebox.showinfo("Error","Primero debes segmentar la imagen")
+    # if routeM is not None:
+    #     register_and_get_image_data(routeM)
+    # else:
+    #     messagebox.showinfo("Error","Primero debes escoger una imagen")
 
 def update_scale_range():
     # Obtener el tamaño del eje Z una vez que la imagen se ha cargado
