@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import filedialog
 from tkinter import ttk
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import nibabel as nib
 import numpy as np
@@ -11,18 +12,22 @@ sys.path.append('./Segmentation Algorithms')
 sys.path.append('./Standarization')
 sys.path.append('./Noise Remotion')
 sys.path.append('./Edge detection')
+sys.path.append('./Register')
 from umbralization import umbralization_segmentation
 from kmeans import kmeans_segmentation
 from region_growing import region_growing_segmentation
+from gmm import gmm
 from StandarizationAlgorithms import *
 from NoiseRemotion import *
 from EdgeDetection import *
+from Register import register_and_get_image_data
+import SimpleITK as sitk
 
 #canvas = None
 image_data = None
 scale_num = 0
 selected_segmentation = None
-preview = None
+preview = np.random.rand(1,1,1)
 selected_image = None
 selected_image_target = None
 fig = None
@@ -30,6 +35,7 @@ tol = None
 tau = None
 k = None
 segmentation = None
+routeM = None
 
 
 # Funcion que se llama cuando se carga la imagen
@@ -38,11 +44,13 @@ def recover_image():
     global fig
     global preview
     global image_data
-    route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
-    selected_image = nib.load(route)
+    global routeM
+    routeM = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
+    selected_image = nib.load(routeM)
     image_data = selected_image.get_fdata()
     preview = selected_image.get_fdata()
-    create_preview(preview)    
+    create_preview(preview)  
+    update_scale_range()  
     
 def recover_image_target():
     global selected_image_target
@@ -96,6 +104,14 @@ def combo_option_noise_remotion(data):
         image_data = median_filter(data)
         preview = median_filter(data)
         create_preview(preview)
+    elif(selected_sound_remotion == "Mean filter with borders"):
+        image_data = mean_filter_with_borders(data)
+        preview = mean_filter_with_borders(data)
+        create_preview(preview)
+    elif(selected_sound_remotion == "Medium filter with borders"):
+        image_data = median_filter_with_borders(data)
+        preview = median_filter_with_borders(data)
+        create_preview(preview)
 
 def create_preview(data):
     global scale_num
@@ -115,12 +131,15 @@ def combo_option_segmentation():
     global tol
     global tau
     global k 
+    global segmentation
     selected_segmentation = segmentationSelector.get()
     tol = int(entryTol.get()) if entryTol.get() else None
     tau = int(entryTau.get()) if entryTau.get() else None
     k = int(entryK.get()) if entryK.get() else None
+    threshold = float(entryTh.get()) if entryTh.get() else None
     if selected_segmentation is None:
         print("No hay data")
+        messagebox.showinfo("Error","Debes escojer un tipo de segmentacion")
     elif(selected_segmentation == "Umbralizacion"):
         apply_umbralization(image_data,tol,tau)
         open_image_umbralization()
@@ -130,6 +149,10 @@ def combo_option_segmentation():
     elif(selected_segmentation == "Region Growing"):
         apply_regionGrowing(image_data,tol)
         open_image_regionGrowing()
+    elif(selected_segmentation == "Gmm"):
+        apply_gmm(image_data,k,threshold)
+        open_image_gmm()
+        
 
 def scale_widget_option(value):
     global scale_num
@@ -151,6 +174,8 @@ def scale_widget_option(value):
             
         elif selected_segmentation == "Region Growing":
             open_image_regionGrowing() 
+        elif selected_segmentation == "Gmm":
+            open_image_gmm() 
 
 
     
@@ -161,9 +186,11 @@ def segmentation_params():
     labelTol.grid_remove()
     labelTau.grid_remove()
     labelK.grid_remove()
+    labelTh.grid_remove()
     entryTol.grid_remove()
     entryTau.grid_remove()
     entryK.grid_remove()
+    entryTh.grid_remove()
     if selected_value == "Umbralizacion":
         labelTol.grid(column = 0, row = 6, padx = 10, pady = 10)
         entryTol.grid(column = 1, row = 6, padx = 10, pady = 10)
@@ -175,7 +202,11 @@ def segmentation_params():
     elif selected_value == "Region Growing":
         labelTol.grid(column = 0, row = 6, padx = 10, pady = 10)
         entryTol.grid(column = 1, row = 6, padx = 10, pady = 10)
-
+    elif selected_value == "Gmm":
+        labelK.grid(column = 0, row = 6, padx = 10, pady = 10)
+        entryK.grid(column = 1, row = 6, padx = 10, pady = 10)
+        labelTh.grid(column = 2, row = 6, padx = 10, pady = 10)
+        entryTh.grid(column = 3, row = 6, padx = 10, pady = 10)
 
 
 def combo_option_edge_detection(data):
@@ -189,7 +220,10 @@ def combo_option_edge_detection(data):
 
 def apply_umbralization(image,tol,tau):
     global segmentation
-    segmentation = umbralization_segmentation(image, tol, tau) 
+    segmentation = umbralization_segmentation(image, tol, tau)
+    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
+    sitk.WriteImage(sitk_segmentation, output_image_path)  
 
 def open_image_umbralization():
     global scale_num
@@ -203,7 +237,11 @@ def open_image_umbralization():
 
 def apply_kmeans(image,k):
     global segmentation
-    segmentation = kmeans_segmentation(image, k)    
+    global selected_image
+    segmentation = kmeans_segmentation(image, k)  
+    nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine=np.eye(4))
+    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
+    nib.save(nifti_img, output_image_path)    
 
 def open_image_Kmeans():
     global scale_num
@@ -219,6 +257,9 @@ def open_image_Kmeans():
 def apply_regionGrowing(image,tol):
     global segmentation
     segmentation = region_growing_segmentation(image, tol)
+    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
+    sitk.WriteImage(sitk_segmentation, output_image_path)  
 
 def open_image_regionGrowing():
     global scale_num
@@ -229,6 +270,36 @@ def open_image_regionGrowing():
     ax.imshow(segmentation[:,:,scaleNum])
     ax.axis('off')
     canvas.draw() 
+
+def apply_gmm(image,k,th):
+    global segmentation
+    segmentation = gmm(image, k,th)
+    sitk_segmentation = sitk.GetImageFromArray(segmentation.astype(np.float32))
+    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
+    sitk.WriteImage(sitk_segmentation, output_image_path)  
+    
+def open_image_gmm():
+    global scale_num
+    #segmentation = region_growing_segmentation(image, tol)
+    fig.clf()
+    ax = fig.add_subplot(111)
+    scaleNum = int(scale_num)
+    ax.imshow(segmentation[:,:,scaleNum])
+    ax.axis('off')
+    canvas.draw() 
+
+def do_register():
+    #selected_value = segmentationSelector.get()
+    if segmentation is not None:
+        register_and_get_image_data('./SegmentationResults/SegmentationResult.nii.gz',routeM)
+    else:
+        messagebox.showinfo("Error","Primero debes segmentar la imagen")
+
+def update_scale_range():
+    # Obtener el tamaño del eje Z una vez que la imagen se ha cargado
+    global preview
+    max_z = preview.shape[2] - 1
+    scaleWidget.config(to=max_z)
 
 def close_interface():
     plt.close(fig)
@@ -266,7 +337,7 @@ canvas.get_tk_widget().pack()
 figPre = plt.figure(figsize=(6, 6), dpi=100)
 figPre.tight_layout(pad=0)
 canvaPre = FigureCanvasTkAgg(figPre, master=optionFrame) 
-canvaPre.get_tk_widget().grid(column = 0,row = 9,padx=10,pady=10, columnspan=2) 
+canvaPre.get_tk_widget().grid(column = 0,row = 10,padx=10,pady=10, columnspan=2) 
 canvaPre.get_tk_widget().config(width=200,height=200)
 figPre.set_facecolor("#00CED1")
 
@@ -292,7 +363,7 @@ standarizationSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_s
 
 labelNoiseRemotion = Label(optionFrame, text = "Noise remotion technique: ",  bg=optionFrame["bg"])
 labelNoiseRemotion.grid(column = 0, row = 3, padx = 10, pady = 10)
-noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter"])
+noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter","Mean filter with borders","Medium filter with borders"])
 noiseRemotionSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
 noiseRemotionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_noise_remotion(image_data))
 
@@ -305,7 +376,7 @@ edgeDetectionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_ed
 
 labelSegmentation = Label(optionFrame, text = "Segmentation algorithm: ",  bg=optionFrame["bg"])
 labelSegmentation.grid(column = 0, row = 5, padx = 10, pady = 10)
-segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing"])
+segmentationSelector = ttk.Combobox(optionFrame,values=["Umbralizacion","K-means","Region Growing","Gmm"])
 segmentationSelector.grid(column = 1, row = 5, padx = 10, pady = 10)
 segmentationSelector.bind("<<ComboboxSelected>>", lambda event: segmentation_params())
 
@@ -315,12 +386,14 @@ entryPerc = Entry(optionFrame)
 labelTol = Label(optionFrame, text = "Tolerance:",  bg=optionFrame["bg"])
 labelTau = Label(optionFrame, text = "Tau:",  bg=optionFrame["bg"])
 labelK = Label(optionFrame, text = "K:",  bg=optionFrame["bg"])
+labelTh = Label(optionFrame, text = "Threshold:",  bg=optionFrame["bg"])
 
 entryTol = Entry(optionFrame)
 entryTau = Entry(optionFrame)
 entryK = Entry(optionFrame)
+entryTh = Entry(optionFrame)
 
-scaleWidget = Scale(optionFrame,from_=0,to=47,orient= HORIZONTAL, command=scale_widget_option)
+scaleWidget = Scale(optionFrame,from_=0,to= 0,orient= HORIZONTAL, command=scale_widget_option)
 scaleWidget.grid(column=1,row=7,padx=10,pady=20)
 labelScale= Label(optionFrame, text = "Z: ",  bg=optionFrame["bg"])
 labelScale.grid(column=0,row=7,padx=10,pady=20)
@@ -330,6 +403,8 @@ buttonSegmentate.grid(column = 0, row = 8,padx=10,pady=20,columnspan=2)
 
 buttonStandarizateHistogram = Button(optionFrame, text="Standarizate",command=lambda: do_histogram_matching(selected_image))
 
+buttonRegister = Button(optionFrame,text="Register",command=do_register)
+buttonRegister.grid(column = 0, row = 9,padx=10,pady=20,columnspan=2)
 
 
 
