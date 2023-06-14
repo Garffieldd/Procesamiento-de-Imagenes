@@ -109,10 +109,10 @@ def combo_option_noise_remotion(data):
         image_data = mean_filter_with_borders(data)
         preview = mean_filter_with_borders(data)
         create_preview(preview)
-    # elif(selected_sound_remotion == "Medium filter with borders"):
-    #     image_data = median_filter_with_borders(data)
-    #     preview = median_filter_with_borders(data)
-    #     create_preview(preview)
+    elif(selected_sound_remotion == "Medium filter with borders"):
+        image_data = median_filter_with_borders(data)
+        preview = median_filter_with_borders(data)
+        create_preview(preview)
 
 def create_preview(data):
     global scale_num
@@ -381,7 +381,7 @@ standarizationSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_s
 labelNoiseRemotion = Label(optionFrame, text = "Noise remotion technique: ",  bg=optionFrame["bg"])
 labelNoiseRemotion.grid(column = 0, row = 3, padx = 10, pady = 10)
 labelNoiseRemotion.configure(background=optionFrame["bg"])
-noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter","Mean filter with borders"])
+noiseRemotionSelector = ttk.Combobox(optionFrame,values=["Mean filter","Medium filter","Mean filter with borders","Medium filter with borders"])
 noiseRemotionSelector.grid(column = 1, row = 3, padx = 10, pady = 10)
 noiseRemotionSelector.bind("<<ComboboxSelected>>", lambda event: combo_option_noise_remotion(image_data))
 
