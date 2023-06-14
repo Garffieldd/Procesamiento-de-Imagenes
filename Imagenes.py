@@ -32,11 +32,16 @@ preview = np.random.rand(1,1,1)
 selected_image = None
 selected_image_target = None
 fig = None
+fig1 = None
 tol = None
 tau = None
 k = None
 segmentation = None
+#VARIABLES DE LA SEGUNDA PESTAÑA
 routeM = None
+registration_data = None
+scale_num_register = 0
+
 
 
 # Funcion que se llama cuando se carga la imagen
@@ -120,7 +125,7 @@ def create_preview(data):
     figPre.clf()
     ax = figPre.add_subplot(111)
     scaleNum = int(scale_num)
-    ax.imshow(data[:,:,scaleNum])
+    ax.imshow(data[:,:,scaleNum],cmap='gray')
     ax.axis('off')
     canvaPre.draw()  
 
@@ -297,16 +302,38 @@ def open_image_gmm():
     ax.axis('off')
     canvas.draw() 
 
+def open_image_register():
+    global scale_num_register
+    global registration_data
+    print(scale_num_register)
+    load_registration = nib.load('./RegisterResults/Registered_FLAIR.nii.gz')
+    registration_data = load_registration.get_fdata()
+    scaleNum = int(scale_num_register)
+    fig1.clf()
+    ax1 = fig1.add_subplot(111)
+    #scaleNum = int(scale_num)
+    ax1.imshow(registration_data[:,:,scaleNum])
+    ax1.axis('off')
+    canvas1.draw() 
+
 def do_register():
     #selected_value = segmentationSelector.get()
+    global routeM
     if segmentation is not None:
-        register_and_get_image_data_itk('./SegmentationResults/SegmentationResult.nii.gz')
+        register_and_get_image_data_itk(routeM,'./SegmentationResults/SegmentationResult.nii.gz')
+        open_image_register()
+        update_scale_range_registration()
     else:
         messagebox.showinfo("Error","Primero debes segmentar la imagen")
-    # if routeM is not None:
-    #     register_and_get_image_data(routeM)
-    # else:
-    #     messagebox.showinfo("Error","Primero debes escoger una imagen")
+
+   
+def scale_widget_option_register(value):
+    global scale_num_register
+    if registration_data is not None:
+        scale_num_register = value
+        open_image_register()
+
+    
 
 def update_scale_range():
     # Obtener el tamaño del eje Z una vez que la imagen se ha cargado
@@ -314,13 +341,25 @@ def update_scale_range():
     max_z = preview.shape[2] - 1
     scaleWidget.config(to=max_z)
 
+def update_scale_range_registration():
+    # Obtener el tamaño del eje Z una vez que la imagen se ha cargado
+    global registration_data
+    max_z = registration_data.shape[2] - 1
+    scaleWidget1.config(to=max_z)
+
 def close_interface():
     plt.close(fig)
     plt.close(figPre)
+    plt.close(fig1)
+    #plt.close(fig1)
     canvas.get_tk_widget().destroy()
     canvaPre.get_tk_widget().destroy()
+    canvas1.get_tk_widget().destroy()
     optionFrame.destroy()
     imageFrame.destroy()
+    imageFrame1.destroy()
+    
+    # Cerrar la ventana principal
     root.destroy()
         
 #Creacion de componentes de la interfaz
@@ -334,14 +373,21 @@ root.grid_columnconfigure(0, weight=1)
 style = Style(theme='pulse')#lumen pulse simplex
 style.configure('TLabel', font=('Arial', 12))
 style.configure('TButton', font=('Arial', 12))
+# Crear el Notebook para las pestañas
+notebook = ttk.Notebook(root)
+notebook.pack(fill=BOTH, expand=True)
+#-------------- primera pestaña
+page1 = ttk.Frame(notebook)
+notebook.add(page1, text="Pre-procesate and segmentate")
+
 #---------------------- FRAME DE LAS OPCIONES
-optionFrame = Frame(root)
+optionFrame = Frame(page1)
 optionFrame.grid(column=0, row=0, sticky="nsew")
 optionFrame.config(width=300,height=600, bg='dark turquoise')
 #------------------------ FRAME DE LA VISUALIZACION DE LA IMAGEN
-imageFrame = Frame(root)
+imageFrame = Frame(page1)
 imageFrame.grid(column=1, row=0, sticky="nsew")
-imageFrame.config(width=500,height=root["height"], bg='MidnightBlue')
+imageFrame.config(width=500,height=page1.winfo_height(), bg='MidnightBlue')
 
 #canvas de la imagen segmentada
 fig = plt.figure(figsize=(6, 6), dpi=100,facecolor="MidnightBlue")
@@ -353,7 +399,7 @@ canvas.get_tk_widget().pack()
 figPre = plt.figure(figsize=(6, 6), dpi=100)
 figPre.tight_layout(pad=0)
 canvaPre = FigureCanvasTkAgg(figPre, master=optionFrame) 
-canvaPre.get_tk_widget().grid(column = 0,row = 10,padx=10,pady=10, columnspan=2) 
+canvaPre.get_tk_widget().grid(column = 0,row = 9,padx=10,pady=10, columnspan=2) 
 canvaPre.get_tk_widget().config(width=200,height=200)
 figPre.set_facecolor("#00CED1")
 
@@ -428,9 +474,72 @@ buttonSegmentate = Button(optionFrame, text="Segmentate",command=combo_option_se
 buttonSegmentate.grid(column = 0, row = 8,padx=10,pady=20,columnspan=2)
 
 buttonStandarizateHistogram = Button(optionFrame, text="Standarizate",command=lambda: do_histogram_matching(selected_image))
+#--------------------------------------------SEGUNDA VENTANA SOBRE REGISTRO ------------------------------------------
 
-buttonRegister = Button(optionFrame,text="Register",command=do_register)
-buttonRegister.grid(column = 0, row = 9,padx=10,pady=20,columnspan=2)
+new_page = ttk.Frame(notebook)
+notebook.add(new_page, text="Register")
+
+# Crear el frame de opciones en la nueva pestaña
+optionFrame1 = Frame(new_page)
+optionFrame1.pack(side=LEFT, fill=BOTH, expand=True)
+optionFrame1.config(width=300, height=600, bg='dark turquoise')
+
+# Crear el frame de visualización de imagen en la nueva pestaña
+imageFrame1 = Frame(new_page)
+imageFrame1.pack(side=RIGHT, fill=BOTH, expand=True)
+imageFrame1.config(width=500, height=new_page.winfo_height(), bg='MidnightBlue')
+
+#canvas de la imagen registrada
+fig1 = plt.figure(figsize=(6, 6), dpi=100,facecolor="MidnightBlue")
+fig1.tight_layout(pad=0)
+canvas1 = FigureCanvasTkAgg(fig1, master=imageFrame1)
+canvas1.get_tk_widget().pack(fill=BOTH, expand=True)
+canvas1.draw()
+
+
+for i in range(10):
+    optionFrame1.grid_rowconfigure(i, weight=1)
+    optionFrame1.grid_columnconfigure(i, weight=1)
+
+
+
+buttonRegister = Button(optionFrame1,text="Register",command=do_register)
+buttonRegister.grid(column = 1, row = 1,padx=10,pady=20,columnspan=2,sticky="ew")
+
+labelVolume1= Label(optionFrame1, text = "Volumen 1: ")
+labelVolume1.grid(column=1,row=2,padx=10,pady=20)
+labelVolume1.configure(background=optionFrame1["bg"])
+labelVolume1Result= Label(optionFrame1, text = "1")
+labelVolume1Result.grid(column=2,row=2,padx=10,pady=20)
+labelVolume1Result.configure(background=optionFrame1["bg"])
+
+
+labelVolume2= Label(optionFrame1, text = "Volumen 2: ")
+labelVolume2.grid(column=1,row=3,padx=10,pady=20)
+labelVolume2.configure(background=optionFrame1["bg"])
+labelVolume2Result= Label(optionFrame1, text = "2")
+labelVolume2Result.grid(column=2,row=3,padx=10,pady=20)
+labelVolume2Result.configure(background=optionFrame1["bg"])
+
+labelVolume3= Label(optionFrame1, text = "Volumen 3: ")
+labelVolume3.grid(column=1,row=4,padx=10,pady=20)
+labelVolume3.configure(background=optionFrame1["bg"])
+labelVolume3Result= Label(optionFrame1, text = "3")
+labelVolume3Result.grid(column=2,row=4,padx=10,pady=20)
+labelVolume3Result.configure(background=optionFrame1["bg"])
+
+labelVolume4= Label(optionFrame1, text = "Volumen 4: ")
+labelVolume4.grid(column=1,row=5,padx=10,pady=20)
+labelVolume4.configure(background=optionFrame1["bg"])
+labelVolume4Result= Label(optionFrame1, text = "4")
+labelVolume4Result.grid(column=2,row=5,padx=10,pady=20)
+labelVolume4Result.configure(background=optionFrame1["bg"])
+
+scaleWidget1 = Scale(optionFrame1,from_=0,to= 0,orient= HORIZONTAL, command=scale_widget_option_register)
+scaleWidget1.grid(column=1,row=6,padx=10,pady=20)
+labelScale1= Label(optionFrame1, text = "Z: ")
+labelScale1.grid(column=0,row=6,padx=10,pady=20)
+labelScale1.configure(background=optionFrame1["bg"])
 
 
 
