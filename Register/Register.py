@@ -3,19 +3,21 @@ import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
 from tkinter import filedialog
-
-def register_and_get_image_data_itk(routeM,moving):
+import os
+def register_and_get_image_data_itk(routeM,moving,fixed):
     # Load fixed and moving images
-    route = filedialog.askopenfilename(filetypes=[("Image files", "FLAIR.nii.gz")])
-    fixed_image = sitk.ReadImage(route)
-    moving_image = sitk.ReadImage(moving)
+    #route = filedialog.askopenfilename(filetypes=[("Image files", "FLAIR.nii.gz")])
     original_image = sitk.ReadImage(routeM)
+    moving_image = sitk.ReadImage(moving)
+    fixed_image = sitk.ReadImage(fixed)
     #moving_image_segmentation = sitk.ReadImage(moving_image_path)
 
     # Convert image types
-    fixed_image = sitk.Cast(fixed_image, sitk.sitkFloat32)
-    moving_image = sitk.Cast(moving_image, sitk.sitkFloat32)
     original_image = sitk.Cast(original_image, sitk.sitkFloat32)
+    moving_image = sitk.Cast(moving_image, sitk.sitkFloat32)
+    fixed_image = sitk.Cast(fixed_image, sitk.sitkFloat32)
+    
+    
     #moving_image_segmentation = sitk.Cast(moving_image_segmentation, sitk.sitkFloat32)
 
     # Define the registration components
@@ -51,5 +53,10 @@ def register_and_get_image_data_itk(routeM,moving):
     #resampled_array = sitk.GetArrayFromImage(resampled_image)
     
     # Save the resampled image as NIfTI
-    output_image_path = './RegisterResults/Registered_FLAIR.nii.gz'
-    sitk.WriteImage(registered_image, output_image_path)
+    file_name = os.path.basename(routeM)
+    print(file_name)
+    if(file_name == 'T1.nii.gz'): 
+        sitk.WriteImage(registered_image, './RegisterResults/Registered_FLAIR_T1.nii.gz')
+    elif(file_name == 'IR.nii.gz'):
+        sitk.WriteImage(registered_image, './RegisterResults/Registered_FLAIR_IR.nii.gz') 
+    

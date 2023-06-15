@@ -22,8 +22,9 @@ from NoiseRemotion import *
 from EdgeDetection import *
 #from RegisterAnts import register_and_get_image_data
 from register import register_and_get_image_data_itk
+from finalRegister import remove_brain
 from ttkbootstrap import Style
-
+import os
 #canvas = None
 image_data = None
 scale_num = 0
@@ -41,6 +42,7 @@ segmentation = None
 routeM = None
 registration_data = None
 scale_num_register = 0
+folder_selected = None
 
 
 
@@ -231,8 +233,18 @@ def apply_umbralization(image,tol,tau):
     segmentation = umbralization_segmentation(image, tol, tau)
     affine = selected_image.affine
     nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
-    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    nib.save(nifti_img, output_image_path)   
+    file_name = os.path.basename(routeM)
+    if(file_name == 'FLAIR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultFLAIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'T1.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultT1.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'IR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    else:
+        messagebox.showinfo("Aviso","Para que la imagen se guarde, debe de llamarse FLAIR,T1 O IR con su respectiva extension nii.gz")  
 
 def open_image_umbralization():
     global scale_num
@@ -247,11 +259,24 @@ def open_image_umbralization():
 def apply_kmeans(image,k):
     global segmentation
     global selected_image
+    global routeM
     segmentation = kmeans_segmentation(image, k)  
     affine = selected_image.affine
     nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
-    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    nib.save(nifti_img, output_image_path)    
+    file_name = os.path.basename(routeM)
+    if(file_name == 'FLAIR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultFLAIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'T1.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultT1.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'IR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    else:
+        messagebox.showinfo("Aviso","Para que la imagen se guarde, debe de llamarse FLAIR,T1 O IR con su respectiva extension nii.gz")
+
+      
 
 def open_image_Kmeans():
     global scale_num
@@ -270,8 +295,18 @@ def apply_regionGrowing(image,tol):
     segmentation = region_growing_segmentation(image, tol)
     affine = selected_image.affine
     nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
-    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    nib.save(nifti_img, output_image_path)  
+    file_name = os.path.basename(routeM)
+    if(file_name == 'FLAIR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultFLAIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'T1.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultT1.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'IR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    else:
+        messagebox.showinfo("Aviso","Para que la imagen se guarde, debe de llamarse FLAIR,T1 O IR con su respectiva extension nii.gz")  
 
 def open_image_regionGrowing():
     global scale_num
@@ -289,8 +324,18 @@ def apply_gmm(image,k,th):
     segmentation = gmm(image, k,th)
     affine = selected_image.affine
     nifti_img = nib.Nifti1Image(segmentation.astype(np.float32), affine)
-    output_image_path = './SegmentationResults/SegmentationResult.nii.gz'
-    nib.save(nifti_img, output_image_path)   
+    file_name = os.path.basename(routeM)
+    if(file_name == 'FLAIR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultFLAIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'T1.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultT1.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    elif(file_name == 'IR.nii.gz'):
+        output_image_path = './SegmentationResults/SegmentationResultIR.nii.gz'
+        nib.save(nifti_img, output_image_path)  
+    else:
+        messagebox.showinfo("Aviso","Para que la imagen se guarde, debe de llamarse FLAIR,T1 O IR con su respectiva extension nii.gz") 
     
 def open_image_gmm():
     global scale_num
@@ -305,26 +350,95 @@ def open_image_gmm():
 def open_image_register():
     global scale_num_register
     global registration_data
-    print(scale_num_register)
-    load_registration = nib.load('./RegisterResults/Registered_FLAIR.nii.gz')
+    global folder_selected
+    fond = os.path.join(folder_selected, 'FLAIR.nii.gz')
+    fond_nib = nib.load(fond)
+    fond_data = fond_nib.get_fdata()
+    load_registration = nib.load('./RegisterResults/temp_image/FLAIR_skull_lesion.nii.gz')
     registration_data = load_registration.get_fdata()
     scaleNum = int(scale_num_register)
+    print(scaleNum)
     fig1.clf()
     ax1 = fig1.add_subplot(111)
     #scaleNum = int(scale_num)
     ax1.imshow(registration_data[:,:,scaleNum])
+    ax1.imshow(fond_data[:,:,scaleNum], alpha=0.5,cmap='gray')
     ax1.axis('off')
     canvas1.draw() 
 
-def do_register():
+
+
+
+def patient_folder():
+    global folder_selected
     #selected_value = segmentationSelector.get()
-    global routeM
-    if segmentation is not None:
-        register_and_get_image_data_itk(routeM,'./SegmentationResults/SegmentationResult.nii.gz')
-        open_image_register()
-        update_scale_range_registration()
-    else:
-        messagebox.showinfo("Error","Primero debes segmentar la imagen")
+    folder_selected = filedialog.askdirectory(initialdir="/", title="Selecciona una carpeta que contenga sus imagenes IR,T1 y FLAIR") 
+    # file_to_load = os.path.join(folder_selected, 'FLAIR.nii.gz')
+    # data = nib.load(file_to_load)
+    # image_data = data.get_fdata() 
+    # print(image_data)   
+    
+
+
+def do_register_T1():
+    #selected_value = segmentationSelector.get()
+    global folder_selected
+    file_to_load = os.path.join(folder_selected, 'T1.nii.gz')
+    fixed_image = os.path.join(folder_selected, 'FLAIR.nii.gz')
+    segmentation_route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
+    register_and_get_image_data_itk(file_to_load,segmentation_route,fixed_image)
+    
+    
+
+def do_register_IR():
+    #selected_value = segmentationSelector.get()
+    global folder_selected
+    file_to_load = os.path.join(folder_selected, 'IR.nii.gz')
+    fixed_image = os.path.join(folder_selected, 'FLAIR.nii.gz')
+    segmentation_route = filedialog.askopenfilename(filetypes=[("Image files", "*.nii.gz")])
+    register_and_get_image_data_itk(file_to_load,segmentation_route,fixed_image)
+
+
+def do_final_register():
+    global folder_selected
+    flair_file = os.path.join(folder_selected, 'FLAIR.nii.gz')
+    remove_brain('./RegisterResults/Registered_FLAIR_IR.nii.gz','./RegisterResults/Registered_FLAIR_T1.nii.gz',flair_file)
+    open_image_register()
+    update_scale_range_registration()
+    calculate_volumes()
+
+def calculate_volumes():
+    #data = np.array(imageDataProfe)
+    listbox = Listbox(optionFrame1, width=30)
+    listbox.grid(column=1, row=6, padx=10, pady=20)
+    listbox.configure(background=optionFrame1["bg"])
+    final_image_route = './RegisterResults/temp_image/FLAIR_skull_lesion.nii.gz'
+    final_image_nib = nib.load(final_image_route)
+    final_image_data = final_image_nib.get_fdata()
+    valores_segmentados = np.unique(final_image_data)
+    volumenesMM3 = {}
+    volumenes = {}
+    for valor in valores_segmentados:
+        if valor != 0:
+            volumen = np.count_nonzero(final_image_data == valor)
+            volumenes[valor] = volumen
+            tamaño_voxel = np.abs(final_image_nib.affine.diagonal()[:3])
+            volumen_en_mm3 = volumen * np.prod(tamaño_voxel)
+            volumenesMM3[valor] = volumen_en_mm3
+            listbox.insert("end", f"Volumen {int(valor)} : {volumen_en_mm3}")
+            listbox.insert("end","\n")
+
+# labelVolume1= Label(optionFrame1, text = "Volumen 1: ")
+# labelVolume1.grid(column=1,row=5,padx=10,pady=20)
+# labelVolume1.configure(background=optionFrame1["bg"])
+# labelVolume1Result= Label(optionFrame1, text = "1")
+# labelVolume1Result.grid(column=2,row=5,padx=10,pady=20)
+# labelVolume1Result.configure(background=optionFrame1["bg"])
+    print(volumenesMM3)
+    print(volumenes)
+    print(valores_segmentados)
+
+
 
    
 def scale_widget_option_register(value):
@@ -503,42 +617,52 @@ for i in range(10):
 
 
 
-buttonRegister = Button(optionFrame1,text="Register",command=do_register)
-buttonRegister.grid(column = 1, row = 1,padx=10,pady=20,columnspan=2,sticky="ew")
 
-labelVolume1= Label(optionFrame1, text = "Volumen 1: ")
-labelVolume1.grid(column=1,row=2,padx=10,pady=20)
-labelVolume1.configure(background=optionFrame1["bg"])
-labelVolume1Result= Label(optionFrame1, text = "1")
-labelVolume1Result.grid(column=2,row=2,padx=10,pady=20)
-labelVolume1Result.configure(background=optionFrame1["bg"])
+buttonSelecPatient = Button(optionFrame1,text="Selecciona la carpeta de tu paciente",command=patient_folder)
+buttonSelecPatient.grid(column = 1, row = 1,padx=10,pady=20,columnspan=2,sticky="ew")
+
+buttonRegisterT1 = Button(optionFrame1,text="Selecciona la segmentacion T1",command=do_register_T1)
+buttonRegisterT1.grid(column = 1, row = 2,padx=10,pady=20,columnspan=2,sticky="ew")
+
+buttonRegisterIR = Button(optionFrame1,text="Selecciona la segmentacion IR",command=do_register_IR)
+buttonRegisterIR.grid(column = 1, row = 3,padx=10,pady=20,columnspan=2,sticky="ew")
+
+showVolumes = Button(optionFrame1,text="Mostrar Registro final",command=do_final_register)
+showVolumes.grid(column = 1, row = 4,padx=10,pady=20,columnspan=2,sticky="ew")
+
+# labelVolume1= Label(optionFrame1, text = "Volumen 1: ")
+# labelVolume1.grid(column=1,row=5,padx=10,pady=20)
+# labelVolume1.configure(background=optionFrame1["bg"])
+# labelVolume1Result= Label(optionFrame1, text = "1")
+# labelVolume1Result.grid(column=2,row=5,padx=10,pady=20)
+# labelVolume1Result.configure(background=optionFrame1["bg"])
 
 
-labelVolume2= Label(optionFrame1, text = "Volumen 2: ")
-labelVolume2.grid(column=1,row=3,padx=10,pady=20)
-labelVolume2.configure(background=optionFrame1["bg"])
-labelVolume2Result= Label(optionFrame1, text = "2")
-labelVolume2Result.grid(column=2,row=3,padx=10,pady=20)
-labelVolume2Result.configure(background=optionFrame1["bg"])
+# labelVolume2= Label(optionFrame1, text = "Volumen 2: ")
+# labelVolume2.grid(column=1,row=6,padx=10,pady=20)
+# labelVolume2.configure(background=optionFrame1["bg"])
+# labelVolume2Result= Label(optionFrame1, text = "2")
+# labelVolume2Result.grid(column=2,row=6,padx=10,pady=20)
+# labelVolume2Result.configure(background=optionFrame1["bg"])
 
-labelVolume3= Label(optionFrame1, text = "Volumen 3: ")
-labelVolume3.grid(column=1,row=4,padx=10,pady=20)
-labelVolume3.configure(background=optionFrame1["bg"])
-labelVolume3Result= Label(optionFrame1, text = "3")
-labelVolume3Result.grid(column=2,row=4,padx=10,pady=20)
-labelVolume3Result.configure(background=optionFrame1["bg"])
+# labelVolume3= Label(optionFrame1, text = "Volumen 3: ")
+# labelVolume3.grid(column=1,row=7,padx=10,pady=20)
+# labelVolume3.configure(background=optionFrame1["bg"])
+# labelVolume3Result= Label(optionFrame1, text = "3")
+# labelVolume3Result.grid(column=2,row=7,padx=10,pady=20)
+# labelVolume3Result.configure(background=optionFrame1["bg"])
 
-labelVolume4= Label(optionFrame1, text = "Volumen 4: ")
-labelVolume4.grid(column=1,row=5,padx=10,pady=20)
-labelVolume4.configure(background=optionFrame1["bg"])
-labelVolume4Result= Label(optionFrame1, text = "4")
-labelVolume4Result.grid(column=2,row=5,padx=10,pady=20)
-labelVolume4Result.configure(background=optionFrame1["bg"])
+# labelVolume4= Label(optionFrame1, text = "Volumen 4: ")
+# labelVolume4.grid(column=1,row=8,padx=10,pady=20)
+# labelVolume4.configure(background=optionFrame1["bg"])
+# labelVolume4Result= Label(optionFrame1, text = "4")
+# labelVolume4Result.grid(column=2,row=8,padx=10,pady=20)
+# labelVolume4Result.configure(background=optionFrame1["bg"])
 
-scaleWidget1 = Scale(optionFrame1,from_=0,to= 0,orient= HORIZONTAL, command=scale_widget_option_register)
-scaleWidget1.grid(column=1,row=6,padx=10,pady=20)
+scaleWidget1 = Scale(optionFrame1,from_=0,to= 0,orient= HORIZONTAL, command=scale_widget_option_register,length=300)
+scaleWidget1.grid(column=1,row=5,padx=10,pady=20)
 labelScale1= Label(optionFrame1, text = "Z: ")
-labelScale1.grid(column=0,row=6,padx=10,pady=20)
+labelScale1.grid(column=0,row=5,padx=10,pady=20)
 labelScale1.configure(background=optionFrame1["bg"])
 
 
