@@ -104,12 +104,13 @@ def remove_brain(ir_registered,t1_registered,flair):
 
     # Where the values are 3, replace them in the image_data with a value of 3
 
-    result = np.where(image_data_flair_segmented == 6 , 1 , 0)
-
-    result[:,:,13] = 0
-    image_data_flair_segmented[:,:,13] = 0
+    #image_data_flair_segmented[:,:,13] = 0
+    
     image_data = np.where(image_data_flair_segmented == 6, 3, image_data)
-
+    for z in range(14 - 1, -1, -1):
+        image_data[:,:,z] = np.where(image_data[:,:,z] == 3, 0, image_data[:,:,z])
+    image_data[:,:,4-1::-1] = 0
+        
     affine = image.affine   
     # Create a nibabel image object from the image data
     image = nib.Nifti1Image(image_data.astype(np.float32), affine=affine)
